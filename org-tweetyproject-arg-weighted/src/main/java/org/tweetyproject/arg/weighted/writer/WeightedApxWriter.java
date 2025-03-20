@@ -84,34 +84,8 @@ public class WeightedApxWriter {
 	 */
 	@SuppressWarnings("rawtypes")
 	public void write(WeightedArgumentationFramework waf, File f, int precision, Boolean convertToNumericWeight) throws IOException {
-	    PrintWriter writer = new PrintWriter(f, "UTF-8");
-	    Object weight;
-	    for (Argument a : waf)
-	        writer.println("arg(" + a.getName() + ").");
-
-	    for (Attack att : waf.getAttacks()) {
-	        String formattedWeight;
-	        if (isFloatingPoint(waf.getWeight(att)) && precision != -1) {
-	            // Check if it's a floating-point number and apply precision formatting
-	        	weight = waf.getWeight(att);
-                // Round the floating-point number to the specified precision
-                double roundedValue = Math.round((double)weight * Math.pow(10, precision)) / Math.pow(10, precision);
-                formattedWeight = String.valueOf(roundedValue);
-	        } else {
-	            // Use the original value if precision is -1 or if it's not a floating-point number
-	        	// Use numeric value if convertToNumericWeight is true
-	        	if (convertToNumericWeight) {
-	        		formattedWeight = String.valueOf(waf.getNumericWeight(att));
-	        	} else {
-		            formattedWeight = String.valueOf(waf.getWeight(att));
-	        	}
-	        	
-	        }
-	        
-	        writer.println("att(" + att.getAttacker().getName() + "," + att.getAttacked().getName() + "):-" + formattedWeight + ".");
-	    }
-
-	    writer.close();
+		// TODO Olekz Implementation did not compile. Check if fixed in `main`.
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	/**

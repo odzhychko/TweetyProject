@@ -249,8 +249,10 @@ final class GraphAbstractDialecticalFramework implements AbstractDialecticalFram
         return this.index.keySet().containsAll(c);
     }
 
+    // TODO Olekz Check if fixed on `main`.
+    // Else make sure, this is the correct fix.
     @Override
-    public boolean isAttacked(Argument a, Extension<? extends ArgumentationFramework> ext) {
+    public boolean isAttacked(Argument a, Extension<? extends ArgumentationFramework<?>> ext) {
         throw new UnsupportedOperationException("Unsupported");
     }
 
