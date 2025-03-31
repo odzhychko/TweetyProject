@@ -25,17 +25,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import org.json.JSONException;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.tweetyproject.arg.dung.syntax.DungTheory;
+import org.tweetyproject.causal.parser.CausalParser;
+import org.tweetyproject.causal.reasoner.AbstractCausalReasoner;
+import org.tweetyproject.causal.reasoner.ArgumentationBasedCausalReasoner;
+import org.tweetyproject.causal.syntax.CausalKnowledgeBase;
 import org.tweetyproject.commons.BeliefSet;
 import org.tweetyproject.commons.Formula;
 import org.tweetyproject.commons.Parser;
@@ -66,6 +66,8 @@ import org.tweetyproject.web.services.aba.AbaReasonerCalleeFactory;
 import org.tweetyproject.web.services.aba.AbaReasonerPost;
 import org.tweetyproject.web.services.aba.AbaReasonerResponse;
 import org.tweetyproject.web.services.aba.GeneralAbaReasonerFactory;
+import org.tweetyproject.web.services.causal.CausalReasonerPost;
+import org.tweetyproject.web.services.causal.CausalReasonerResponse;
 import org.tweetyproject.web.services.delp.DeLPCallee;
 import org.tweetyproject.web.services.delp.DeLPPost;
 import org.tweetyproject.web.services.delp.DeLPResponse;
@@ -79,8 +81,6 @@ import org.tweetyproject.web.services.dung.DungReasonerCalleeFactory.Command;
 import org.tweetyproject.web.services.incmes.InconsistencyGetMeasuresResponse;
 import org.tweetyproject.web.services.incmes.InconsistencyPost;
 import org.tweetyproject.web.services.incmes.InconsistencyValueResponse;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.tweetyproject.arg.aba.parser.AbaParser;
 import org.tweetyproject.arg.aba.reasoner.GeneralAbaReasoner;
 import org.tweetyproject.arg.aba.semantics.AbaExtension;
@@ -97,7 +97,11 @@ import org.tweetyproject.arg.dung.reasoner.AbstractExtensionReasoner;
 import org.tweetyproject.arg.dung.semantics.Extension;
 
 import javafx.util.Pair;
+
 import java.util.logging.Level;
+
+import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.SUCCESS;
+import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.TIMEOUT;
 
 
 /**
@@ -109,7 +113,7 @@ public class RequestController {
 	private final int SERVICES_TIMEOUT_DUNG = 600;
 	private final int SERVICES_TIMEOUT_DELP = 600;
 	private final int SERVICES_TIMEOUT_INCMES = 300;
-
+	private final int SERVICES_TIMEOUT_CAUSAL = 300;
 
 
 /**
@@ -696,5 +700,91 @@ public class RequestController {
 		return response;
 	}
 
+	/**
+	 * Executes the causal reasoner as specified by the provided {@link CausalReasonerPost}
+	 *
+	 * @param request The request payload containing information for causal reasoning
+	 * @return A Response object containing the result of the ABA reasoning operation.
+	 */
+	@PostMapping(value = "/causal", produces = "application/json")
+	@ResponseBody
+	@CrossOrigin
+	public CausalReasonerResponse handleRequest(@RequestBody CausalReasonerPost request) throws RuntimeException {
+		LoggerUtil.logger.info(String.format("Run causal reasoner command \"%s\" with timeout: %s %s", request.getCmd(),request.getTimeout(), request.getUnit_timeout()));
 
+		TimeUnit timoutUnit = Utils.getTimoutUnit(request.getUnit_timeout());
+		int timout = Utils.checkUserTimeout(request.getTimeout(), SERVICES_TIMEOUT_CAUSAL, timoutUnit);
+
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		Pair<String, Long> resultAndExecutionTime;
+		try {
+			var future = executor.submit(() -> processCommand(request));
+			resultAndExecutionTime = Utils.runServicesWithTimeout(future, timout, timoutUnit);
+		} catch (TimeoutException e) {
+			LoggerUtil.logger.info("Timeout while running causal reasoner.");
+			return new CausalReasonerResponse(
+						null,
+						request.getEmail(),
+						timout,
+						request.getUnit_timeout(),
+						TIMEOUT
+				);
+		} catch (ExecutionException e) {
+			LoggerUtil.logger.warning(() -> "Error while running causal reasoner: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		} catch (InterruptedException e) {
+			LoggerUtil.logger.warning(() -> "Interrupt while running causal reasoner: " + e.getMessage());
+			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			throw new RuntimeException("Thread was interrupted.");
+        } finally {
+			executor.shutdownNow();
+		}
+
+		long executionTime = resultAndExecutionTime.getValue();
+		String result = resultAndExecutionTime.getKey();
+        return new CausalReasonerResponse(
+				result,
+				request.getEmail(),
+				executionTime,
+				request.getUnit_timeout(),
+				SUCCESS
+		);
+	}
+
+	private static String processCommand(CausalReasonerPost causalReasonerPost) {
+		switch (causalReasonerPost.getCmd()) {
+			case GET_CONCLUSIONS:
+				return processConclusionsCommand(causalReasonerPost);
+			default:
+				//  `cmd` should never be null, because it is annotated with `@NonNull`.
+				throw new IllegalStateException("Command should be set.");
+		}
+	}
+
+	private static String processConclusionsCommand(CausalReasonerPost causalReasonerPost) {
+		CausalParser causalParser = new CausalParser();
+		CausalKnowledgeBase causalKnowledgeBase;
+		try {
+			causalKnowledgeBase = causalParser.parseBeliefBase(causalReasonerPost.getKb());
+		} catch (ParserException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, null, e);
+		} catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+		Collection<PlFormula> observations;
+		try {
+			observations = causalParser.parseListOfFormulae(causalReasonerPost.getObservations(), ",");
+		} catch (ParserException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, null, e);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+		AbstractCausalReasoner reasoner = new ArgumentationBasedCausalReasoner();
+		Collection<PlFormula> conclusions = reasoner.getConclusions(causalKnowledgeBase, observations);
+		return conclusions.toString();
+	}
 }
