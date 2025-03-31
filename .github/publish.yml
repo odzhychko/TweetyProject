@@ -1,0 +1,16 @@
+name: Publish
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for OCI image to publish'
+        required: true
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-publish-image:
+    runs-on: ubuntu-24.04
+    steps:
+        - uses: actions/checkout@v4
