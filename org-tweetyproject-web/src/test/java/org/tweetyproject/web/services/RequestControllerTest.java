@@ -87,4 +87,32 @@ class RequestControllerTest {
                         }
                         """));
     }
+
+    @Test
+    public void causalReasonerCalculatesSignificantAtoms() throws Exception {
+        var post = post("/causal")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "email": "aId",
+                          "cmd": "get_significant_atoms",
+                          "kb": "a <=> b\\nc <=> d\\n{ d, !b }",
+                          "observations": "!a, !b",
+                          "timeout": 10,
+                          "unit_timeout": "s"
+                        }
+                        """);
+
+        mvc.perform(post)
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        {
+                          "reply": "{\\n  \\"a\\" : [ \\"a\\", \\"b\\" ],\\n  \\"b\\" : [ \\"a\\", \\"b\\" ],\\n  \\"c\\" : [ \\"c\\", \\"d\\" ],\\n  \\"d\\" : [ \\"d\\" ]\\n}",
+                          "email": "aId",
+                          "time": 0,
+                          "unit_timeout": "s",
+                          "status": "SUCCESS"
+                        }
+                        """));
+    }
 }

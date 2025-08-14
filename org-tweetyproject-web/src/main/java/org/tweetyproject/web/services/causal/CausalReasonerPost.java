@@ -62,7 +62,13 @@ public class CausalReasonerPost {
          * @see org.tweetyproject.causal.reasoner.AbstractCausalReasoner#getConclusions
          */
         @JsonProperty("get_conclusions")
-        GET_CONCLUSIONS
+        GET_CONCLUSIONS,
+
+        /**
+         * Instructs the reasoner to calculate per atom the atoms which are significant for its conclusion.
+         */
+        @JsonProperty("get_significant_atoms")
+        GET_SIGNIFICANT_ATOMS;
     }
 
     /**
