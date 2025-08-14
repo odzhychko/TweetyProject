@@ -25,9 +25,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -99,9 +103,9 @@ import org.tweetyproject.arg.dung.semantics.Extension;
 import javafx.util.Pair;
 
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
-import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.SUCCESS;
-import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.TIMEOUT;
+import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.*;
 
 
 /**
@@ -114,6 +118,14 @@ public class RequestController {
 	private final int SERVICES_TIMEOUT_DELP = 600;
 	private final int SERVICES_TIMEOUT_INCMES = 300;
 	private final int SERVICES_TIMEOUT_CAUSAL = 300;
+
+
+    private final ObjectMapper objectMapper;
+
+    @Autowired
+    public RequestController(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
 
 /**
@@ -753,38 +765,69 @@ public class RequestController {
 		);
 	}
 
-	private static String processCommand(CausalReasonerPost causalReasonerPost) {
-		switch (causalReasonerPost.getCmd()) {
-			case GET_CONCLUSIONS:
-				return processConclusionsCommand(causalReasonerPost);
-			default:
-				//  `cmd` should never be null, because it is annotated with `@NonNull`.
-				throw new IllegalStateException("Command should be set.");
-		}
+	private String processCommand(CausalReasonerPost causalReasonerPost) {
+        return switch (causalReasonerPost.getCmd()) {
+            case GET_CONCLUSIONS -> processConclusionsCommand(causalReasonerPost);
+            case GET_SIGNIFICANT_ATOMS -> processSignificantAtomsCommand(causalReasonerPost);
+        };
 	}
 
 	private static String processConclusionsCommand(CausalReasonerPost causalReasonerPost) {
-		CausalParser causalParser = new CausalParser();
-		CausalKnowledgeBase causalKnowledgeBase;
-		try {
-			causalKnowledgeBase = causalParser.parseBeliefBase(causalReasonerPost.getKb());
-		} catch (ParserException e) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, null, e);
-		} catch (IOException e) {
-            throw new RuntimeException(e);
+        CausalKnowledgeBase causalKnowledgeBase = parseCausalKnowledgeBase(causalReasonerPost);
+        Collection<PlFormula> observations = parseObservations(causalReasonerPost);
+
+        AbstractCausalReasoner reasoner = new ArgumentationBasedCausalReasoner();
+        Collection<PlFormula> conclusions = reasoner.getConclusions(causalKnowledgeBase, observations);
+        return conclusions.toString();
+    }
+
+    private String processSignificantAtomsCommand(CausalReasonerPost causalReasonerPost) {
+        CausalKnowledgeBase causalKnowledgeBase = parseCausalKnowledgeBase(causalReasonerPost);
+        Collection<PlFormula> observations = parseObservations(causalReasonerPost);
+
+        ArgumentationBasedCausalReasoner reasoner = new ArgumentationBasedCausalReasoner();
+        var perAtomSignificantAtoms = reasoner.getSignificantAtoms(causalKnowledgeBase, observations, Map.of());
+
+        Map<String, Collection<String>> jsonData = new HashMap<>();
+        for (Map.Entry<Proposition, Collection<Proposition>> entry : perAtomSignificantAtoms.entrySet()) {
+            List<String> list = new ArrayList<>();
+            for (Proposition proposition : entry.getValue()) {
+                String string = proposition.toString();
+                list.add(string);
+            }
+            jsonData.put(entry.getKey().toString(), list);
         }
 
-		Collection<PlFormula> observations;
-		try {
-			observations = causalParser.parseListOfFormulae(causalReasonerPost.getObservations(), ",");
-		} catch (ParserException e) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, null, e);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonData);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-		AbstractCausalReasoner reasoner = new ArgumentationBasedCausalReasoner();
-		Collection<PlFormula> conclusions = reasoner.getConclusions(causalKnowledgeBase, observations);
-		return conclusions.toString();
-	}
+    private static Collection<PlFormula> parseObservations(CausalReasonerPost causalReasonerPost) {
+        CausalParser causalParser = new CausalParser();
+        Collection<PlFormula> observations;
+        try {
+            observations = causalParser.parseListOfFormulae(causalReasonerPost.getObservations(), ",");
+        } catch (ParserException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, null, e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return observations;
+    }
+
+    private static CausalKnowledgeBase parseCausalKnowledgeBase(CausalReasonerPost causalReasonerPost) {
+        CausalParser causalParser = new CausalParser();
+        CausalKnowledgeBase causalKnowledgeBase;
+        try {
+            causalKnowledgeBase = causalParser.parseBeliefBase(causalReasonerPost.getKb());
+        } catch (ParserException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, null, e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return causalKnowledgeBase;
+    }
 }
