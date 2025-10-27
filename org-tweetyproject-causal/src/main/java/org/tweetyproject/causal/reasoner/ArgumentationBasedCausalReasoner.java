@@ -146,12 +146,8 @@ public class ArgumentationBasedCausalReasoner extends AbstractArgumentationBased
     /**
      * Computes, for each atom that appears in the knowledge base, the set of atoms that are
      * significant for establishing that conclusion under the given observations and interventions.
-     *
-     * @param cbase         some causal knowledge base
-     * @param observations  some logical formulae representing the observations of causal atoms
-     * @param interventions a set of interventions on causal atoms
-     * @return the argumentation framework induced from the causal knowledge base and the observations
-     * @implNote This method:
+     * <p>
+     * This method:
      * <ul>
      *   <li>Induces an argumentation theory from the given knowledge base, observations,
      *       and interventions.</li>
@@ -163,6 +159,11 @@ public class ArgumentationBasedCausalReasoner extends AbstractArgumentationBased
      *       under a belief set extended with the argument’s premises, and gathers all
      *       atoms that appear in those kernels.</li>
      * </ul>
+     *
+     * @param cbase         some causal knowledge base
+     * @param observations  some logical formulae representing the observations of causal atoms
+     * @param interventions a set of interventions on causal atoms
+     * @return the argumentation framework induced from the causal knowledge base and the observations
      */
     public Map<Proposition, Collection<Proposition>> getSignificantAtoms(
             CausalKnowledgeBase cbase,

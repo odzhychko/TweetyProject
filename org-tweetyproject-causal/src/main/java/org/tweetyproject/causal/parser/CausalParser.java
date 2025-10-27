@@ -36,8 +36,8 @@ import java.util.regex.Pattern;
 
 /**
  * Parser for {@link CausalKnowledgeBase} and observation as consumed by {@link org.tweetyproject.causal.reasoner.AbstractCausalReasoner}.
- * A causal knowledge base can be parsed with {@link this#parseBeliefBase(Reader)}.
- * Observations can be parsed with {@link this#parseListOfFormulae(String, String)}.
+ * A causal knowledge base can be parsed with {@link #parseBeliefBase(Reader)}.
+ * Observations can be parsed with {@link #parseListOfFormulae(String, String)}.
  *
  * @author Lars Bengel
  * @author Oleksandr Dzhychko
@@ -51,10 +51,10 @@ public class CausalParser extends Parser<CausalKnowledgeBase, PlFormula> {
      * Parses data from the reader into a {@link CausalKnowledgeBase}.
      * Each line must contain either assumptions or are an equation.
      * Assumptions and equations are defined as following:
-     * equation ::= formula "<=>" formula
-     * assumptions ::= '{' assumption (',' assumption)* '}'
-     * assumption ::= formula
-     * formula ::= a propositional formula as parsable by {@link org.tweetyproject.logics.pl.parser.PlParser#parseFormula(String)}
+     * <br>equation ::= formula '&lt;=&gt;' formula
+     * <br>assumptions ::= '{' assumption (',' assumption)* '}'
+     * <br>assumption ::= formula
+     * <br>formula ::= a propositional formula as parsable by {@link org.tweetyproject.logics.pl.parser.PlParser#parseFormula(String)}
      *
      * @param reader a reader
      * @return the parsed causal knowledge base
