@@ -163,14 +163,17 @@ public class ArgumentationBasedCausalReasoner extends AbstractArgumentationBased
      * @param cbase         some causal knowledge base
      * @param observations  some logical formulae representing the observations of causal atoms
      * @param interventions a set of interventions on causal atoms
+     * @param atomFilter    atoms for which to get the significant atoms.
+     *                      If {@code null}, the filter is not applied.
      * @return the argumentation framework induced from the causal knowledge base and the observations
      */
     public Map<Proposition, Collection<Proposition>> getSignificantAtoms(
             CausalKnowledgeBase cbase,
             Collection<PlFormula> observations,
-            Map<Proposition, Boolean> interventions) {
+            Map<Proposition, Boolean> interventions,
+            Collection<Proposition> atomFilter) {
         var theory = getInducedTheory(cbase, observations, interventions);
-        var perAtomArgumentsWithAtomInConclusion = getPerAtomArgumentsWithAtomInConclusion(theory);
+        var perAtomArgumentsWithAtomInConclusion = getPerAtomArgumentsWithAtomInConclusion(theory, atomFilter);
         var beliefSetWithoutAssumptions = createBeliefSetWithObservationsAndInterventions(cbase, observations, interventions);
 
         var perAtomSignificantAtoms = new HashMap<Proposition, Collection<Proposition>>();
@@ -206,9 +209,11 @@ public class ArgumentationBasedCausalReasoner extends AbstractArgumentationBased
      * Returns, for each atom, the set of arguments whose conclusion is the atom or its negation.
      *
      * @param theory the theory containing the arguments
+     * @param atomFilter    atoms for which to get the significant atoms.
+     *                      If {@code null}, the filter is not applied.
      * @return a map from atom to the set of matching arguments
      */
-    private static Map<Proposition, Collection<CausalArgument>> getPerAtomArgumentsWithAtomInConclusion(DungTheory theory) {
+    public Map<Proposition, Collection<CausalArgument>> getPerAtomArgumentsWithAtomInConclusion(DungTheory theory, Collection<Proposition> atomFilter) {
         var perAtomArguments = new HashMap<Proposition, Collection<CausalArgument>>();
 
         for (var argument: theory) {
@@ -218,6 +223,7 @@ public class ArgumentationBasedCausalReasoner extends AbstractArgumentationBased
                 throw new IllegalStateException("Encountered invalid argument with more than one atom in the its conclusion: " + causalArgument);
             }
             var atom = signature.stream().findFirst().get();
+            if (atomFilter != null && !atomFilter.contains(atom)) continue;
 
             var arguments = perAtomArguments.computeIfAbsent(atom, (_atom) -> new ArrayList<>());
             arguments.add(causalArgument);

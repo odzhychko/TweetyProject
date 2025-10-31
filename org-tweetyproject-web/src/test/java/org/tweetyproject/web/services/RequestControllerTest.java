@@ -1,11 +1,29 @@
+/*
+ * This file is part of "TweetyProject", a collection of Java libraries for
+ * logical aspects of artificial intelligence and knowledge representation.
+ *
+ * TweetyProject is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License version 3 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Copyright 2025 The TweetyProject Team <http://tweetyproject.org/contact/>
+ */
 package org.tweetyproject.web.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -16,11 +34,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Oleksandr Dzhychko
  */
-@ExtendWith(SpringExtension.class)
-@WebMvcTest(RequestController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class RequestControllerTest {
     @Autowired
     private MockMvc mvc;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     public void causalReasonerWithInvalidKnowledgeBaseReturnsStatus400() throws Exception {
@@ -61,7 +80,7 @@ class RequestControllerTest {
     }
 
     @Test
-    public void causalReasonerIsCalledSuccessfully() throws Exception {
+    public void causalReasonerRepliesWithAllConclusions() throws Exception {
         var post = post("/causal")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -89,15 +108,16 @@ class RequestControllerTest {
     }
 
     @Test
-    public void causalReasonerCalculatesSignificantAtoms() throws Exception {
+    public void causalReasonerRepliesWithFilteredConclusions() throws Exception {
         var post = post("/causal")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {
                           "email": "aId",
-                          "cmd": "get_significant_atoms",
+                          "cmd": "get_conclusions",
                           "kb": "a <=> b\\nc <=> d\\n{ d, !b }",
                           "observations": "!a, !b",
+                          "conclusionsFilter": "b, c, e",
                           "timeout": 10,
                           "unit_timeout": "s"
                         }
@@ -107,12 +127,96 @@ class RequestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().json("""
                         {
-                          "reply": "{\\n  \\"a\\" : [ \\"a\\", \\"b\\" ],\\n  \\"b\\" : [ \\"a\\", \\"b\\" ],\\n  \\"c\\" : [ \\"c\\", \\"d\\" ],\\n  \\"d\\" : [ \\"d\\" ]\\n}",
+                          "reply": "[!b, c]",
                           "email": "aId",
                           "time": 0,
                           "unit_timeout": "s",
                           "status": "SUCCESS"
                         }
                         """));
+    }
+
+    @Test
+    public void causalReasonerCalculatesSignificantAtoms() throws Exception {
+        var post = post("/causal")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "email": "aId",
+                          "cmd": "get_significant_atoms",
+                          "kb": "a <=> b\\nc <=> d\\n{ d, !b }",
+                          "observations": "!a, !b",
+                          "conclusionsFilter": "a",
+                          "timeout": 10,
+                          "unit_timeout": "s"
+                        }
+                        """);
+
+        mvc.perform(post)
+                .andExpect(status().isOk())
+                .andExpect(content().json("""
+                        {
+                          "reply": "{\\n  \\"a\\" : [ \\"a\\", \\"b\\" ]\\n}",
+                          "email": "aId",
+                          "time": 0,
+                          "unit_timeout": "s",
+                          "status": "SUCCESS"
+                        }
+                        """));
+    }
+
+    @Test
+    public void causalReasonerGetSequenceExplanations() throws Exception {
+        var post = post("/causal")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                          "email": "aId",
+                          "cmd": "get_sequence_explanations",
+                          "kb": "a <=> b\\n{ b, !b }",
+                          "observations": "",
+                          "conclusionsFilter": "a",
+                          "timeout": 10,
+                          "unit_timeout": "s"
+                        }
+                        """);
+
+
+        var expectedReplyJSON = """
+                {
+                  "attacks" : [ {
+                    "attacker" : "([b] -> b)",
+                    "attacked" : "([!b] -> !a)"
+                  }, {
+                    "attacker" : "([!b] -> !b)",
+                    "attacked" : "([b] -> b)"
+                  }, {
+                    "attacker" : "([b] -> b)",
+                    "attacked" : "([!b] -> !b)"
+                  }, {
+                    "attacker" : "([!b] -> !b)",
+                    "attacked" : "([b] -> a)"
+                  } ],
+                  "perAtomSequenceExplanations" : {
+                    "a" : [ {
+                      "argument" : "([b] -> a)",
+                      "supporters" : [ [ "([b] -> b)" ], [ "([b] -> a)" ] ],
+                      "defeated" : [ [ "([!b] -> !b)" ], [ ] ]
+                    } ]
+                  }
+                }""";
+        var expectedReplyJSONEscaped = objectMapper.writeValueAsString(expectedReplyJSON);
+        var expectedResponse = String.format("""
+                {
+                  "reply": %s,
+                  "email": "aId",
+                  "time": 0,
+                  "unit_timeout": "s",
+                  "status": "SUCCESS"
+                }
+                """, expectedReplyJSONEscaped);
+        mvc.perform(post)
+                .andExpect(status().isOk())
+                .andExpect(content().json(expectedResponse));
     }
 }

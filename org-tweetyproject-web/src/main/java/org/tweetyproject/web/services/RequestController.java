@@ -18,27 +18,31 @@
  */
 package org.tweetyproject.web.services;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.util.Pair;
 import org.json.JSONException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.tweetyproject.arg.aba.parser.AbaParser;
+import org.tweetyproject.arg.aba.reasoner.GeneralAbaReasoner;
+import org.tweetyproject.arg.aba.semantics.AbaExtension;
+import org.tweetyproject.arg.aba.syntax.AbaTheory;
+import org.tweetyproject.arg.aba.syntax.Assumption;
+import org.tweetyproject.arg.delp.parser.DelpParser;
+import org.tweetyproject.arg.delp.reasoner.DelpReasoner;
+import org.tweetyproject.arg.delp.semantics.ComparisonCriterion;
+import org.tweetyproject.arg.delp.semantics.DelpAnswer;
+import org.tweetyproject.arg.delp.semantics.EmptyCriterion;
+import org.tweetyproject.arg.delp.semantics.GeneralizedSpecificity;
+import org.tweetyproject.arg.delp.syntax.DefeasibleLogicProgram;
+import org.tweetyproject.arg.dung.reasoner.AbstractExtensionReasoner;
+import org.tweetyproject.arg.dung.semantics.Extension;
 import org.tweetyproject.arg.dung.syntax.DungTheory;
 import org.tweetyproject.causal.parser.CausalParser;
-import org.tweetyproject.causal.reasoner.AbstractCausalReasoner;
-import org.tweetyproject.causal.reasoner.ArgumentationBasedCausalReasoner;
 import org.tweetyproject.causal.syntax.CausalKnowledgeBase;
 import org.tweetyproject.commons.BeliefSet;
 import org.tweetyproject.commons.Formula;
@@ -65,47 +69,26 @@ import org.tweetyproject.logics.pl.syntax.Proposition;
 import org.tweetyproject.math.opt.solver.ApacheCommonsSimplex;
 import org.tweetyproject.math.opt.solver.GlpkSolver;
 import org.tweetyproject.math.opt.solver.Solver;
-import org.tweetyproject.web.services.aba.AbaGetSemanticsResponse;
-import org.tweetyproject.web.services.aba.AbaReasonerCalleeFactory;
-import org.tweetyproject.web.services.aba.AbaReasonerPost;
-import org.tweetyproject.web.services.aba.AbaReasonerResponse;
-import org.tweetyproject.web.services.aba.GeneralAbaReasonerFactory;
-import org.tweetyproject.web.services.causal.CausalReasonerPost;
-import org.tweetyproject.web.services.causal.CausalReasonerResponse;
+import org.tweetyproject.web.services.aba.*;
+import org.tweetyproject.web.services.causal.*;
 import org.tweetyproject.web.services.delp.DeLPCallee;
 import org.tweetyproject.web.services.delp.DeLPPost;
 import org.tweetyproject.web.services.delp.DeLPResponse;
-import org.tweetyproject.web.services.dung.AbstractExtensionReasonerFactory;
-import org.tweetyproject.web.services.dung.DungReasonerCalleeFactory;
-import org.tweetyproject.web.services.dung.DungReasonerPost;
-import org.tweetyproject.web.services.dung.DungReasonerResponse;
-import org.tweetyproject.web.services.dung.DungServicesInfoResponse;
+import org.tweetyproject.web.services.dung.*;
 import org.tweetyproject.web.services.dung.AbstractExtensionReasonerFactory.Semantics;
 import org.tweetyproject.web.services.dung.DungReasonerCalleeFactory.Command;
 import org.tweetyproject.web.services.incmes.InconsistencyGetMeasuresResponse;
 import org.tweetyproject.web.services.incmes.InconsistencyPost;
 import org.tweetyproject.web.services.incmes.InconsistencyValueResponse;
-import org.tweetyproject.arg.aba.parser.AbaParser;
-import org.tweetyproject.arg.aba.reasoner.GeneralAbaReasoner;
-import org.tweetyproject.arg.aba.semantics.AbaExtension;
-import org.tweetyproject.arg.aba.syntax.AbaTheory;
-import org.tweetyproject.arg.aba.syntax.Assumption;
-import org.tweetyproject.arg.delp.parser.DelpParser;
-import org.tweetyproject.arg.delp.reasoner.DelpReasoner;
-import org.tweetyproject.arg.delp.semantics.ComparisonCriterion;
-import org.tweetyproject.arg.delp.semantics.DelpAnswer;
-import org.tweetyproject.arg.delp.semantics.EmptyCriterion;
-import org.tweetyproject.arg.delp.semantics.GeneralizedSpecificity;
-import org.tweetyproject.arg.delp.syntax.DefeasibleLogicProgram;
-import org.tweetyproject.arg.dung.reasoner.AbstractExtensionReasoner;
-import org.tweetyproject.arg.dung.semantics.Extension;
 
-import javafx.util.Pair;
-
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
-import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.*;
+import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.SUCCESS;
+import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.TIMEOUT;
 
 
 /**
@@ -121,10 +104,13 @@ public class RequestController {
 
 
     private final ObjectMapper objectMapper;
+    private final CausalReasonerService causalReasonerService;
 
     @Autowired
-    public RequestController(ObjectMapper objectMapper) {
+    public RequestController(ObjectMapper objectMapper,
+                             CausalReasonerService causalReasonerService) {
         this.objectMapper = objectMapper;
+        this.causalReasonerService = causalReasonerService;
     }
 
 
@@ -769,24 +755,25 @@ public class RequestController {
         return switch (causalReasonerPost.getCmd()) {
             case GET_CONCLUSIONS -> processConclusionsCommand(causalReasonerPost);
             case GET_SIGNIFICANT_ATOMS -> processSignificantAtomsCommand(causalReasonerPost);
+            case GET_SEQUENCE_EXPLANATIONS -> processSequenceExplanations(causalReasonerPost);
         };
 	}
 
-	private static String processConclusionsCommand(CausalReasonerPost causalReasonerPost) {
+	private String processConclusionsCommand(CausalReasonerPost causalReasonerPost) {
         CausalKnowledgeBase causalKnowledgeBase = parseCausalKnowledgeBase(causalReasonerPost);
         Collection<PlFormula> observations = parseObservations(causalReasonerPost);
+        var conclusionFilter = parseConclusionFilter(causalReasonerPost);
 
-        AbstractCausalReasoner reasoner = new ArgumentationBasedCausalReasoner();
-        Collection<PlFormula> conclusions = reasoner.getConclusions(causalKnowledgeBase, observations);
+        Collection<PlFormula> conclusions = causalReasonerService.queryConclusions(causalKnowledgeBase, observations, conclusionFilter);
         return conclusions.toString();
     }
 
     private String processSignificantAtomsCommand(CausalReasonerPost causalReasonerPost) {
         CausalKnowledgeBase causalKnowledgeBase = parseCausalKnowledgeBase(causalReasonerPost);
         Collection<PlFormula> observations = parseObservations(causalReasonerPost);
+        var conclusionFilter = parseConclusionFilter(causalReasonerPost);
 
-        ArgumentationBasedCausalReasoner reasoner = new ArgumentationBasedCausalReasoner();
-        var perAtomSignificantAtoms = reasoner.getSignificantAtoms(causalKnowledgeBase, observations, Map.of());
+        var perAtomSignificantAtoms = causalReasonerService.queryPerAtomSignificantAtoms(causalKnowledgeBase, observations, conclusionFilter);
 
         Map<String, Collection<String>> jsonData = new HashMap<>();
         for (Map.Entry<Proposition, Collection<Proposition>> entry : perAtomSignificantAtoms.entrySet()) {
@@ -805,6 +792,20 @@ public class RequestController {
         }
     }
 
+    private String processSequenceExplanations(CausalReasonerPost causalReasonerPost) {
+        CausalKnowledgeBase causalKnowledgeBase = parseCausalKnowledgeBase(causalReasonerPost);
+        Collection<PlFormula> observations = parseObservations(causalReasonerPost);
+        var conclusionFilter = parseConclusionFilter(causalReasonerPost);
+
+        var result = causalReasonerService.querySequenceExplanations(causalKnowledgeBase, observations, conclusionFilter);
+        var reply = SequenceExplanationReply.from(result);
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(reply);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static Collection<PlFormula> parseObservations(CausalReasonerPost causalReasonerPost) {
         CausalParser causalParser = new CausalParser();
         Collection<PlFormula> observations;
@@ -816,6 +817,10 @@ public class RequestController {
             throw new RuntimeException(e);
         }
         return observations;
+    }
+
+    private static @Nullable List<Proposition> parseConclusionFilter(CausalReasonerPost causalReasonerPost) {
+       return ConclusionsFilterSerialization.parse(causalReasonerPost.getConclusionsFilter());
     }
 
     private static CausalKnowledgeBase parseCausalKnowledgeBase(CausalReasonerPost causalReasonerPost) {

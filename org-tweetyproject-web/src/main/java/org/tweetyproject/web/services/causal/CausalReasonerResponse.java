@@ -25,7 +25,7 @@ import org.springframework.lang.NonNull;
  *
  * @author Oleksandr Dzhychko
  */
-public class CausalReasonerResponse {
+public final class CausalReasonerResponse {
 
     public enum Status {
         SUCCESS,

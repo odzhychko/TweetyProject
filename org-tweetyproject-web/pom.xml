@@ -116,6 +116,11 @@
     		<artifactId>pl</artifactId>
     		<version>1.29-SNAPSHOT</version>
 	    </dependency>
+        <dependency>
+            <groupId>org.tweetyproject.arg</groupId>
+            <artifactId>explanations</artifactId>
+            <version>1.29-SNAPSHOT</version>
+        </dependency>
 	    <dependency>
     		<groupId>org.tweetyproject.arg</groupId>
     		<artifactId>delp</artifactId>

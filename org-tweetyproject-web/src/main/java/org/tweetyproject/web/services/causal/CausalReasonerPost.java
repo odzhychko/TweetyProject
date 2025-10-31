@@ -20,15 +20,14 @@ package org.tweetyproject.web.services.causal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.lang.NonNull;
-
-import java.util.Objects;
+import org.springframework.lang.Nullable;
 
 /**
  * Request to execute a {@link CausalReasonerPost#cmd} with a {@link org.tweetyproject.causal.reasoner.AbstractCausalReasoner}
  *
  * @author Oleksandr Dzhychko
  */
-public class CausalReasonerPost {
+public final class CausalReasonerPost {
 
     public CausalReasonerPost(
             @JsonProperty(value = "cmd", required = true)
@@ -39,6 +38,8 @@ public class CausalReasonerPost {
             @NonNull String kb,
             @JsonProperty(value = "observations", required = true)
             @NonNull String observations,
+            @JsonProperty(value = "conclusions_filter")
+            @Nullable String conclusionsFilter,
             @JsonProperty(value = "timeout", required = true)
             int timeout, @NonNull
             @JsonProperty(value = "unit_timeout", required = true)
@@ -48,6 +49,7 @@ public class CausalReasonerPost {
         this.email = email;
         this.kb = kb;
         this.observations = observations;
+        this.conclusionsFilter = conclusionsFilter;
         this.timeout = timeout;
         this.unit_timeout = unit_timeout;
     }
@@ -61,14 +63,17 @@ public class CausalReasonerPost {
          *
          * @see org.tweetyproject.causal.reasoner.AbstractCausalReasoner#getConclusions
          */
-        @JsonProperty("get_conclusions")
-        GET_CONCLUSIONS,
+        @JsonProperty("get_conclusions") GET_CONCLUSIONS,
 
         /**
          * Instructs the reasoner to calculate per atom the atoms which are significant for its conclusion.
          */
-        @JsonProperty("get_significant_atoms")
-        GET_SIGNIFICANT_ATOMS;
+        @JsonProperty("get_significant_atoms") GET_SIGNIFICANT_ATOMS,
+
+        /**
+         * Instructs the reasoner to calculate the sequence of explanations for all consequences.
+         */
+        @JsonProperty("get_sequence_explanations") GET_SEQUENCE_EXPLANATIONS;
     }
 
     /**
@@ -84,17 +89,24 @@ public class CausalReasonerPost {
 
     /**
      * The knowledge base (KB) for the reasoner request
-     * The format of the knowledge base must be as described be {@link org.tweetyproject.causal.parser.CausalParser}.
+     * The format of the knowledge base must be as described in {@link org.tweetyproject.causal.parser.CausalParser#parseBeliefBase(java.io.Reader)}
      */
     @NonNull
     private String kb;
 
     /**
      * The observations for the reasoner request
-     * The format of the knowledge base must be as described be {@link org.tweetyproject.causal.parser.CausalParser}.
+     * The format of the knowledge base must be as used by {@link org.tweetyproject.causal.parser.CausalParser#parseListOfFormulae} with "," (comma) as delimiter.
      */
     @NonNull
     private String observations;
+
+    /**
+     * Atoms for which the conclusions should be queried and returned.
+     * The format of the knowledge base must be as described in {@link ConclusionsFilterSerialization#parse(String)}
+     */
+    @Nullable
+    private String conclusionsFilter;
 
     /**
      * The timeout in seconds for the reasoner request
@@ -139,6 +151,14 @@ public class CausalReasonerPost {
         this.observations = observations;
     }
 
+    public String getConclusionsFilter() {
+        return this.conclusionsFilter;
+    }
+
+    public void setConclusionsFilter(String conclusionsFilter) {
+        this.conclusionsFilter = conclusionsFilter;
+    }
+
     public int getTimeout() {
         return this.timeout;
     }
@@ -153,25 +173,5 @@ public class CausalReasonerPost {
 
     public void setUnit_timeout(String unit_timeout) {
         this.unit_timeout = unit_timeout;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) return true;
-        if (!(o instanceof CausalReasonerPost)) {
-            return false;
-        }
-        CausalReasonerPost CausalReasonerPost = (CausalReasonerPost) o;
-        return Objects.equals(cmd, CausalReasonerPost.cmd) && Objects.equals(email, CausalReasonerPost.email) && Objects.equals(kb, CausalReasonerPost.kb) && Objects.equals(observations, CausalReasonerPost.observations) && timeout == CausalReasonerPost.timeout && Objects.equals(unit_timeout, CausalReasonerPost.unit_timeout);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(cmd, email, kb, observations, timeout, unit_timeout);
-    }
-
-    @Override
-    public String toString() {
-        return "{" + " cmd='" + getCmd() + "'" + ", email='" + getEmail() + "'" + ", kb='" + getKb() + "'" + ", query_assumption='" + getObservations() + "'" + ", timeout='" + getTimeout() + "'" + ", unit_timeout='" + getUnit_timeout() + "'" + "}";
     }
 }
