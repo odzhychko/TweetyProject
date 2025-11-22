@@ -27,8 +27,12 @@ import org.tweetyproject.logics.pl.syntax.Proposition;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * @author Oleksandr Dzhychko
+ */
 public class ConclusionsFilterSerialization {
 
     private static final String ATOM_DELIMITER = ",";
@@ -38,9 +42,9 @@ public class ConclusionsFilterSerialization {
      * Parse the filter string for conclusions.
      *
      * @param conclusionsFilterString {@link Proposition}s as parsable by {@link CausalParser#parseFormula(String)} seperated by {@link #ATOM_DELIMITER}
-     * @return List of {@link Proposition}s or {@code null} if the input is {@code null} or empty.
+     * @return Set of {@link Proposition}s or {@code null} if the input is {@code null} or empty.
      */
-    public static @Nullable List<Proposition> parse(@Nullable String conclusionsFilterString) {
+    public static @Nullable Set<Proposition> parse(@Nullable String conclusionsFilterString) {
         if (conclusionsFilterString == null) {
             return null;
         }
@@ -61,7 +65,7 @@ public class ConclusionsFilterSerialization {
                     String msg = String.format("Formula `%s` is not a proposition,", formula);
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, msg);
                 })
-                .collect(Collectors.toUnmodifiableList());
+                .collect(Collectors.toUnmodifiableSet());
 
         if (propositions.isEmpty()) {
             return null;

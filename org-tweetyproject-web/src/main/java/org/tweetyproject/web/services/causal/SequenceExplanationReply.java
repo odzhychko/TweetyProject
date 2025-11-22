@@ -20,6 +20,8 @@ package org.tweetyproject.web.services.causal;
 
 import org.tweetyproject.arg.explanations.semantics.DialectialSequenceExplanation;
 import org.tweetyproject.logics.pl.syntax.Proposition;
+import org.tweetyproject.web.services.sequenceexplanation.AttackDTO;
+import org.tweetyproject.web.services.sequenceexplanation.DialectialSequenceExplanationDTO;
 
 import java.util.LinkedHashMap;
 import java.util.List;

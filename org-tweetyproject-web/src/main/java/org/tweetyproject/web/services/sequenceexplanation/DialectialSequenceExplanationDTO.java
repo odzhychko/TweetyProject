@@ -16,9 +16,10 @@
  *
  * Copyright 2025 The TweetyProject Team <http://tweetyproject.org/contact/>
  */
-package org.tweetyproject.web.services.causal;
+package org.tweetyproject.web.services.sequenceexplanation;
 
 import org.tweetyproject.arg.explanations.semantics.DialectialSequenceExplanation;
+import org.tweetyproject.web.services.causal.ArgumentSerialization;
 
 import java.util.List;
 import java.util.stream.Collectors;

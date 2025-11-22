@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-class RequestControllerTest {
+class RequestControllerCausalTest {
     @Autowired
     private MockMvc mvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -104,7 +104,7 @@ class RequestControllerTest {
                           "unit_timeout": "s",
                           "status": "SUCCESS"
                         }
-                        """));
+                        """, true));
     }
 
     @Test
@@ -133,7 +133,7 @@ class RequestControllerTest {
                           "unit_timeout": "s",
                           "status": "SUCCESS"
                         }
-                        """));
+                        """, true));
     }
 
     @Test
@@ -162,7 +162,7 @@ class RequestControllerTest {
                           "unit_timeout": "s",
                           "status": "SUCCESS"
                         }
-                        """));
+                        """, true));
     }
 
     @Test
@@ -217,6 +217,6 @@ class RequestControllerTest {
                 """, expectedReplyJSONEscaped);
         mvc.perform(post)
                 .andExpect(status().isOk())
-                .andExpect(content().json(expectedResponse));
+                .andExpect(content().json(expectedResponse, true));
     }
 }

@@ -16,42 +16,30 @@
  *
  * Copyright 2025 The TweetyProject Team <http://tweetyproject.org/contact/>
  */
-package org.tweetyproject.web.services.causal;
+package org.tweetyproject.web.services.sequenceexplanation;
 
-import org.tweetyproject.arg.dung.syntax.Attack;
+import org.springframework.lang.Nullable;
+import org.tweetyproject.arg.dung.syntax.Argument;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * @author Oleksandr Dzhychko
  */
-public final class AttackDTO {
-    private final String attacker;
-    private final String attacked;
+public class ArgumentFilterSerialization {
 
-    public AttackDTO(String attacker, String attacked) {
-        this.attacker = attacker;
-        this.attacked = attacked;
-    }
-
-    public static List<AttackDTO> from(Collection<Attack> attacks) {
-        return attacks.stream()
-                .map(AttackDTO::from)
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    public static AttackDTO from(Attack attack) {
-        return new AttackDTO(attack.getAttacker().toString(), attack.getAttacked().toString());
-    }
-
-
-    public String getAttacker() {
-        return attacker;
-    }
-
-    public String getAttacked() {
-        return attacked;
+    /**
+     * Deserialize the filter for arguments.
+     *
+     * @param argumentFilter List of {@link Argument} names or {@code null}
+     * @return Set of {@link Argument}s or {@code null} if the input is {@code null} or empty.
+     */
+    public static @Nullable Set<Argument> deserialize(@Nullable List<String> argumentFilter) {
+        if (argumentFilter == null || argumentFilter.isEmpty()) {
+            return null;
+        }
+        return argumentFilter.stream().map(Argument::new).collect(Collectors.toUnmodifiableSet());
     }
 }

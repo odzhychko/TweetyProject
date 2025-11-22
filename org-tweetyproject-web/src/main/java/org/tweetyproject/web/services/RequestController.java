@@ -41,6 +41,8 @@ import org.tweetyproject.arg.delp.semantics.GeneralizedSpecificity;
 import org.tweetyproject.arg.delp.syntax.DefeasibleLogicProgram;
 import org.tweetyproject.arg.dung.reasoner.AbstractExtensionReasoner;
 import org.tweetyproject.arg.dung.semantics.Extension;
+import org.tweetyproject.arg.dung.syntax.Argument;
+import org.tweetyproject.arg.dung.syntax.Attack;
 import org.tweetyproject.arg.dung.syntax.DungTheory;
 import org.tweetyproject.causal.parser.CausalParser;
 import org.tweetyproject.causal.syntax.CausalKnowledgeBase;
@@ -80,12 +82,19 @@ import org.tweetyproject.web.services.dung.DungReasonerCalleeFactory.Command;
 import org.tweetyproject.web.services.incmes.InconsistencyGetMeasuresResponse;
 import org.tweetyproject.web.services.incmes.InconsistencyPost;
 import org.tweetyproject.web.services.incmes.InconsistencyValueResponse;
+import org.tweetyproject.web.services.sequenceexplanation.*;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationPost.GetSequenceExplanationsCmd;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationPost.SequenceExplanationCmd;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationResponse.SequenceExplanationResult;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationResponse.GetSequenceExplanationsResult;
 
+import javax.validation.Valid;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.SUCCESS;
 import static org.tweetyproject.web.services.causal.CausalReasonerResponse.Status.TIMEOUT;
@@ -100,17 +109,21 @@ public class RequestController {
 	private final int SERVICES_TIMEOUT_DUNG = 600;
 	private final int SERVICES_TIMEOUT_DELP = 600;
 	private final int SERVICES_TIMEOUT_INCMES = 300;
-	private final int SERVICES_TIMEOUT_CAUSAL = 300;
+    private final int SERVICES_TIMEOUT_CAUSAL = 300;
+    private final int SERVICES_TIMEOUT_SEQUENCE_EXPLANATION = 300;
 
 
     private final ObjectMapper objectMapper;
     private final CausalReasonerService causalReasonerService;
+    private final SequenceExplanationService sequenceExplanationService;
 
     @Autowired
     public RequestController(ObjectMapper objectMapper,
-                             CausalReasonerService causalReasonerService) {
+                             CausalReasonerService causalReasonerService,
+                             SequenceExplanationService sequenceExplanationService) {
         this.objectMapper = objectMapper;
         this.causalReasonerService = causalReasonerService;
+        this.sequenceExplanationService = sequenceExplanationService;
     }
 
 
@@ -707,8 +720,12 @@ public class RequestController {
 	@PostMapping(value = "/causal", produces = "application/json")
 	@ResponseBody
 	@CrossOrigin
-	public CausalReasonerResponse handleRequest(@RequestBody CausalReasonerPost request) throws RuntimeException {
-		LoggerUtil.logger.info(String.format("Run causal reasoner command \"%s\" with timeout: %s %s", request.getCmd(),request.getTimeout(), request.getUnit_timeout()));
+	public CausalReasonerResponse handleRequest(@Valid @RequestBody CausalReasonerPost request) {
+		LoggerUtil.logger.info(String.format("Run causal reasoner command \"%s\" for user \"%s\" with timeout: %s %s",
+                request.getCmd(),
+                request.getEmail(),
+                request.getTimeout(),
+                request.getUnit_timeout()));
 
 		TimeUnit timoutUnit = Utils.getTimoutUnit(request.getUnit_timeout());
 		int timout = Utils.checkUserTimeout(request.getTimeout(), SERVICES_TIMEOUT_CAUSAL, timoutUnit);
@@ -819,7 +836,7 @@ public class RequestController {
         return observations;
     }
 
-    private static @Nullable List<Proposition> parseConclusionFilter(CausalReasonerPost causalReasonerPost) {
+    private static @Nullable Set<Proposition> parseConclusionFilter(CausalReasonerPost causalReasonerPost) {
        return ConclusionsFilterSerialization.parse(causalReasonerPost.getConclusionsFilter());
     }
 
@@ -834,5 +851,82 @@ public class RequestController {
             throw new RuntimeException(e);
         }
         return causalKnowledgeBase;
+    }
+
+    @PostMapping(value = "/sequence-explanation", produces = "application/json")
+    @ResponseBody
+    @CrossOrigin
+    public SequenceExplanationResponse handleRequest(@Valid @RequestBody SequenceExplanationPost request) {
+        LoggerUtil.logger.info(String.format("Run sequence explanation command \"%s\" for user \"%s\" with timeout: %s %s",
+                request.getCmd().getClass().getSimpleName(),
+                request.getEmail(),
+                request.getTimeout(),
+                request.getUnit_timeout()));
+
+        TimeUnit timeoutUnit = Utils.getTimoutUnit(request.getUnit_timeout());
+        int timeout = Utils.checkUserTimeout(request.getTimeout(), SERVICES_TIMEOUT_SEQUENCE_EXPLANATION, timeoutUnit);
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Pair<SequenceExplanationResult, Long> resultAndExecutionTime;
+        try {
+            var future = executor.submit(() -> processCommand(request.getCmd()));
+            resultAndExecutionTime = Utils.runServicesWithTimeout(future, timeout, timeoutUnit);
+        } catch (TimeoutException e) {
+            LoggerUtil.logger.info("Timeout while running sequence explanation.");
+            return new SequenceExplanationResponse(
+                    null,
+                    request.getEmail(),
+                    timeout,
+                    request.getUnit_timeout(),
+                    SequenceExplanationResponse.Status.TIMEOUT
+            );
+        } catch (ExecutionException e) {
+            LoggerUtil.logger.warning(() -> "Error while running sequence explanation reasoner: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            LoggerUtil.logger.warning(() -> "Interrupt while running  sequence explanation: " + e.getMessage());
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Thread was interrupted.");
+        } finally {
+            executor.shutdownNow();
+        }
+
+        long executionTime = resultAndExecutionTime.getValue();
+        var result = resultAndExecutionTime.getKey();
+        return new SequenceExplanationResponse(
+                result,
+                request.getEmail(),
+                executionTime,
+                request.getUnit_timeout(),
+                SequenceExplanationResponse.Status.SUCCESS
+        );
+    }
+
+    private SequenceExplanationResult processCommand(SequenceExplanationCmd cmd) {
+        if (cmd instanceof GetSequenceExplanationsCmd) {
+            return processSequenceExplanationCmd((GetSequenceExplanationsCmd) cmd);
+        } else {
+            throw new IllegalStateException("Encountered invalid command:" + cmd.getClass().getSimpleName());
+        }
+    }
+
+    private GetSequenceExplanationsResult processSequenceExplanationCmd(GetSequenceExplanationsCmd cmd) {
+        var theory = new DungTheory();
+        for (AttackDTO attackDTO: cmd.getAttacks()) {
+            var attacker = new Argument(attackDTO.getAttacker());
+            var attacked = new Argument(attackDTO.getAttacked());
+            theory.add(attacker);
+            theory.add(attacked);
+            var attack = new Attack(attacker, attacked);
+            theory.add(attack);
+        }
+        Set<Argument> argumentFilter = ArgumentFilterSerialization.deserialize(cmd.getArgumentFilter());
+        if (argumentFilter != null) {
+            theory.addAll(argumentFilter);
+        }
+        var sequenceExplanation = sequenceExplanationService.querySequenceExplanations(theory, argumentFilter);
+        return GetSequenceExplanationsResult.from(sequenceExplanation);
     }
 }

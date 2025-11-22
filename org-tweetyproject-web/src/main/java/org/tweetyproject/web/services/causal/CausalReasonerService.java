@@ -18,7 +18,6 @@
  */
 package org.tweetyproject.web.services.causal;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -33,18 +32,21 @@ import org.tweetyproject.logics.pl.syntax.Proposition;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * @author Oleksandr Dzhychko
+ */
 @Service
 public final class CausalReasonerService {
     private final ArgumentationBasedCausalReasoner causalReasoner = new ArgumentationBasedCausalReasoner();
     private final DialecticalSequenceExplanationReasoner explanationReasoner = new DialecticalSequenceExplanationReasoner();
 
-    public Collection<PlFormula> queryConclusions(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, List<Proposition> conclusionFilter) {
+    public Collection<PlFormula> queryConclusions(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, Set<Proposition> conclusionFilter) {
         Collection<PlFormula> conclusions = causalReasoner.getConclusions(causalKnowledgeBase, observations);
         conclusions = filterConclusions(conclusions, conclusionFilter);
         return conclusions;
     }
 
-    private static Collection<PlFormula> filterConclusions(Collection<PlFormula> conclusions, @Nullable List<Proposition> conclusionFilter) {
+    private static Collection<PlFormula> filterConclusions(Collection<PlFormula> conclusions, @Nullable Set<Proposition> conclusionFilter) {
         if (conclusionFilter == null) {
             return conclusions;
         }
@@ -53,17 +55,17 @@ public final class CausalReasonerService {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    public static boolean isConclusionInFilter(PlFormula conclusion, @NonNull List<Proposition> conclusionFilter) {
+    public static boolean isConclusionInFilter(PlFormula conclusion, @NonNull Set<Proposition> conclusionFilter) {
         return conclusionFilter.stream()
                 .anyMatch(proposition -> conclusion.getAtoms().contains(proposition));
     }
 
 
-    public Map<Proposition, Collection<Proposition>> queryPerAtomSignificantAtoms(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, List<Proposition> conclusionFilter) {
+    public Map<Proposition, Collection<Proposition>> queryPerAtomSignificantAtoms(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, Set<Proposition> conclusionFilter) {
         return causalReasoner.getSignificantAtoms(causalKnowledgeBase, observations, Map.of(), conclusionFilter);
     }
 
-    public CausalReasonerService.SequenceExplanations querySequenceExplanations(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, List<Proposition> conclusionFilter) {
+    public CausalReasonerService.SequenceExplanations querySequenceExplanations(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, Set<Proposition> conclusionFilter) {
         var theory = causalReasoner.getInducedTheory(causalKnowledgeBase, observations, Map.of());
         var perAtomArgumentsWithAtomInConclusion = causalReasoner.getPerAtomArgumentsWithAtomInConclusion(theory, conclusionFilter);
 

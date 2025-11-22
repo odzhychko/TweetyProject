@@ -63,7 +63,7 @@ public class ArgumentationBasedCausalReasonerTest extends AbstractCausalReasoner
         Collection<PlFormula> observations = List.of(covid);
         ArgumentationBasedCausalReasoner reasoner = createReasoner();
 
-        var perAtomInfluencingAtoms = reasoner.getSignificantAtoms(knowledgeBase, observations, Map.of());
+        var perAtomInfluencingAtoms = reasoner.getSignificantAtoms(knowledgeBase, observations, Map.of(), null);
 
         Map<PlFormula, Collection<Proposition>> perConclusionExpectedInfluencingAtoms = Map.of(
                 atRisk, Set.of(atRisk),

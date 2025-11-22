@@ -19,8 +19,9 @@
 package org.tweetyproject.web.services.causal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+
+import javax.validation.constraints.NotNull;
 
 /**
  * Request to execute a {@link CausalReasonerPost#cmd} with a {@link org.tweetyproject.causal.reasoner.AbstractCausalReasoner}
@@ -31,17 +32,17 @@ public final class CausalReasonerPost {
 
     public CausalReasonerPost(
             @JsonProperty(value = "cmd", required = true)
-            @NonNull Cmd cmd,
+            Cmd cmd,
             @JsonProperty("email")
             String email,
             @JsonProperty(value = "kb", required = true)
-            @NonNull String kb,
+            String kb,
             @JsonProperty(value = "observations", required = true)
-            @NonNull String observations,
+            String observations,
             @JsonProperty(value = "conclusions_filter")
-            @Nullable String conclusionsFilter,
+            String conclusionsFilter,
             @JsonProperty(value = "timeout", required = true)
-            int timeout, @NonNull
+            int timeout,
             @JsonProperty(value = "unit_timeout", required = true)
             String unit_timeout
     ) {
@@ -79,26 +80,27 @@ public final class CausalReasonerPost {
     /**
      * The command type for the reasoner request
      */
-    @NonNull
+    @NotNull
     private Cmd cmd;
 
     /**
      * The email associated with the request
      */
+    @Nullable
     private String email;
 
     /**
      * The knowledge base (KB) for the reasoner request
      * The format of the knowledge base must be as described in {@link org.tweetyproject.causal.parser.CausalParser#parseBeliefBase(java.io.Reader)}
      */
-    @NonNull
+    @NotNull
     private String kb;
 
     /**
      * The observations for the reasoner request
      * The format of the knowledge base must be as used by {@link org.tweetyproject.causal.parser.CausalParser#parseListOfFormulae} with "," (comma) as delimiter.
      */
-    @NonNull
+    @NotNull
     private String observations;
 
     /**
@@ -116,7 +118,7 @@ public final class CausalReasonerPost {
     /**
      * The unit timeout for the reasoner request
      */
-    @NonNull
+    @NotNull
     private String unit_timeout;
 
     public Cmd getCmd() {
