@@ -35,8 +35,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build with Maven
         run: |
-          mvn --batch-mode --update-snapshots install
-          mvn --batch-mode --update-snapshots spring-boot:build-image -pl org-tweetyproject-web
+          mvn --batch-mode --update-snapshots install -Dgpg.skip=true
+          mvn --batch-mode --update-snapshots spring-boot:build-image -pl org-tweetyproject-web -Dgpg.skip=true
       - name: Set MAVEN_PROJECT_VERSION environment variable
         run: |
           echo "MAVEN_PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
