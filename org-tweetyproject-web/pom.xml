@@ -30,13 +30,51 @@
             <version>2.7.18</version>
             <type>pom</type>
             <scope>import</scope>
+            <!-- Exclude Tomcat dependencies to later include higher version with security fixes-->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-el</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>tomcat-embed-websocket</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat</groupId>
+                    <artifactId>tomcat-annotations-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         </dependencies>
     </dependencyManagement>
 
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>9.0.110</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-el</artifactId>
+            <version>9.0.110</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-websocket</artifactId>
+            <version>9.0.110</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-annotations-api</artifactId>
+            <version>9.0.110</version>
+        </dependency>
 <!-- Logging with java.util.logging -->
 <dependency>
     <groupId>org.springframework.boot</groupId>
