@@ -33,8 +33,12 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build with Maven
         run: |
+          LOGGING_CONFIG_PATH="org-tweetyproject-web/src/main/resources"
+          # Logging to stdout by default is more appropriate for a container deployment
+          mv "$LOGGING_CONFIG_PATH"/logback_stdout.xml "$LOGGING_CONFIG_PATH"/logback.xml
           mvn --batch-mode --update-snapshots install -Dgpg.skip=true
           mvn --batch-mode --update-snapshots spring-boot:build-image -pl org-tweetyproject-web -Dgpg.skip=true
       - name: Set MAVEN_PROJECT_VERSION environment variable
