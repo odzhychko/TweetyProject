@@ -47,7 +47,7 @@ class DialecticalSequenceExplanationReasonerTest {
         var attackDA = new Attack(argumentD, argumentA);
 
         var theory = new DungTheory();
-        theory.add(argumentA, argumentB, argumentC);
+        theory.add(argumentA, argumentB, argumentC, argumentD);
         theory.add(attackAB, attackBC,  attackCD, attackDA);
 
         // #getExplanations fails with `java.lang.IndexOutOfBoundsException: Index: 1, Size: 1`
