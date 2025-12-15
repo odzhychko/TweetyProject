@@ -11,8 +11,10 @@ jobs:
 
     # Permissions required for publishing Docker image.
     # See https://docs.github.com/en/actions/use-cases-and-examples/publishing-packages/publishing-docker-images#publishing-images-to-github-packages
+    # And permissions required for creating releases.
+    # See https://github.com/softprops/action-gh-release
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -46,12 +48,12 @@ jobs:
           # Logging to stdout by default is more appropriate for a container deployment
           mv "$LOGGING_CONFIG_PATH"/logback_stdout.xml "$LOGGING_CONFIG_PATH"/logback.xml
           mvn --batch-mode --update-snapshots install -Dgpg.skip=true
-          mvn --batch-mode --update-snapshots spring-boot:build-image -pl org-tweetyproject-web -Dgpg.skip=true
-      - name: Publish Maven package
-        run: |
-          mvn --batch-mode deploy -pl org-tweetyproject-web -Dgpg.skip=true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          mvn --batch-mode --update-snapshots spring-boot:build-image -pl org-tweetyproject-web -DskipTests -Dgpg.skip=true
+      - name: Publish Fat Jar
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.set_version.outputs.build_version }}
+          files: org-tweetyproject-web/target/web-*.jar
       - name: Build, tag and push Docker image
         run: |
           IMAGE_NAME="${{ env.REGISTRY }}/${GITHUB_REPOSITORY@L}/tweetyproject-web-server"
