@@ -31,6 +31,14 @@
         >scm:git:https://github.com/TweetyProjectTeam/TweetyProject.git</developerConnection>
   </scm>
 
+  <distributionManagement>
+    <snapshotRepository>
+      <id>github</id>
+      <name>GitHub Packages</name>
+      <url>https://maven.pkg.github.com/odzhychko/TweetyProject</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <developers>
     <developer>
       <id>mthimm</id>
@@ -158,16 +166,16 @@
         </executions>
         </plugin>
       -->
-       <plugin>
-            <groupId>org.sonatype.central</groupId>
-            <artifactId>central-publishing-maven-plugin</artifactId>
-            <version>0.8.0</version>
-            <extensions>true</extensions>
-            <configuration>
-              <publishingServerId>central</publishingServerId>
-              <autoPublish>true</autoPublish>
-           </configuration>
-        </plugin>
+<!--       <plugin>-->
+<!--            <groupId>org.sonatype.central</groupId>-->
+<!--            <artifactId>central-publishing-maven-plugin</artifactId>-->
+<!--            <version>0.8.0</version>-->
+<!--            <extensions>true</extensions>-->
+<!--            <configuration>-->
+<!--              <publishingServerId>central</publishingServerId>-->
+<!--              <autoPublish>true</autoPublish>-->
+<!--           </configuration>-->
+<!--        </plugin>-->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
