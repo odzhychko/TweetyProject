@@ -32,10 +32,15 @@
   </scm>
 
   <distributionManagement>
+    <repository>
+      <id>github</id>
+      <name>GitHub Packages</name>
+      <url>${github.repo.package.url}</url>
+    </repository>
     <snapshotRepository>
       <id>github</id>
       <name>GitHub Packages</name>
-      <url>https://maven.pkg.github.com/odzhychko/TweetyProject</url>
+      <url>${github.repo.package.url}</url>
     </snapshotRepository>
   </distributionManagement>
 
@@ -74,6 +79,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
+    <github.repo.package.url>https://maven.pkg.github.com/odzhychko/TweetyProject</github.repo.package.url>
   </properties>
 
   <build>

@@ -47,6 +47,11 @@ jobs:
           mv "$LOGGING_CONFIG_PATH"/logback_stdout.xml "$LOGGING_CONFIG_PATH"/logback.xml
           mvn --batch-mode --update-snapshots install -Dgpg.skip=true
           mvn --batch-mode --update-snapshots spring-boot:build-image -pl org-tweetyproject-web -Dgpg.skip=true
+      - name: Publish Maven package
+        run: |
+          mvn --batch-mode deploy -pl org-tweetyproject-web -Dgpg.skip=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build, tag and push Docker image
         run: |
           IMAGE_NAME="${{ env.REGISTRY }}/${GITHUB_REPOSITORY@L}/tweetyproject-web-server"
