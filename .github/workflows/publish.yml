@@ -47,14 +47,12 @@ jobs:
 
       # Derive build versions from:
       #  - Maven version (e.g., 1.29-SNAPSHOT)
-      #  - Date (e.g., 2025-12-20)
-      #  - Commit hash (e.g., a123456)
-      #  - Existing releases (e.g., v1.29.0-20251220+a123456)
+      #  - Existing preview releases (e.g., v1.29.0-preview)
       #
-      # The build version is derived as `1.29.0-20251220+<commit hash>`.
-      # If a release already exists with a tag starting with `v1.29.0-20251220`,
+      # The build version is derived as `1.29.0-preview`.
+      # If a release already exists with a tag starting with `v1.29.0-preview`,
       # the derived version is incremented with a numeric suffix:
-      #   1.29.0-20251220.1+<commit hash>, 1.29.0-20251220.2+<commit hash>, etc.
+      #   1.29.0-preview.1, 1.29.0-preview.2, etc.
       #
       # This versioning follows Semantic Versioning 2.0.0.
       # See https://semver.org/
@@ -63,15 +61,14 @@ jobs:
         run: |
           VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
           BASE_VERSION=${VERSION%-SNAPSHOT}
-          BUILD_DATE=$(date +%Y%m%d)
-          BUILD_VERSION_WITH_PRERELEASE="${BASE_VERSION}.0-${BUILD_DATE}"
-          SAME_PRERELEASE_COUNT=$(grep -c -F "v${BUILD_VERSION_WITH_PRERELEASE}" <<< "${{ steps.get_releases.outputs.all_releases }}" || true)
-          if (( SAME_PRERELEASE_COUNT != 0 )); then
-            BUILD_VERSION_WITH_PRERELEASE="${BUILD_VERSION_WITH_PRERELEASE}.${SAME_PRERELEASE_COUNT}"
+          BUILD_VERSION="${BASE_VERSION}.0-preview"
+          PREVIEWS_COUNT=$(grep -c -F "v${BUILD_VERSION}" <<< "${{ steps.get_releases.outputs.all_releases }}" || true)
+          if (( PREVIEWS_COUNT != 0 )); then
+            BUILD_VERSION="${BUILD_VERSION}.${PREVIEWS_COUNT}"
           fi
-          BUILD_VERSION="${BUILD_VERSION_WITH_PRERELEASE}+${GITHUB_SHA::7}"
           mvn --batch-mode versions:set -DnewVersion="$BUILD_VERSION" -DgenerateBackupPoms=false
-
+          echo "build_version=$BUILD_VERSION" >> $GITHUB_OUTPUT
+          
       - name: Build with Maven
         run: |
           LOGGING_CONFIG_PATH="org-tweetyproject-web/src/main/resources"
