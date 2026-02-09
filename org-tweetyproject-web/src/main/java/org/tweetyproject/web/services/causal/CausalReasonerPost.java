@@ -72,6 +72,11 @@ public final class CausalReasonerPost {
         @JsonProperty("get_significant_atoms") GET_SIGNIFICANT_ATOMS,
 
         /**
+         * Instructs the reasoner to calculate the corresponding argumentation framework.
+         */
+        @JsonProperty("get_argumentation_framework") GET_ARGUMENTATION_FRAMEWORK,
+
+        /**
          * Instructs the reasoner to calculate the sequence of explanations for all consequences.
          */
         @JsonProperty("get_sequence_explanations") GET_SEQUENCE_EXPLANATIONS;

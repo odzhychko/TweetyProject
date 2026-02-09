@@ -22,6 +22,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.tweetyproject.arg.dung.syntax.Attack;
+import org.tweetyproject.arg.dung.syntax.DungTheory;
 import org.tweetyproject.arg.explanations.reasoner.acceptance.DialecticalSequenceExplanationReasoner;
 import org.tweetyproject.arg.explanations.semantics.DialectialSequenceExplanation;
 import org.tweetyproject.causal.reasoner.ArgumentationBasedCausalReasoner;
@@ -65,7 +66,7 @@ public final class CausalReasonerService {
         return causalReasoner.getSignificantAtoms(causalKnowledgeBase, observations, Map.of(), conclusionFilter);
     }
 
-    public CausalReasonerService.SequenceExplanations querySequenceExplanations(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, Set<Proposition> conclusionFilter) {
+    public SequenceExplanations querySequenceExplanations(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations, Set<Proposition> conclusionFilter) {
         var theory = causalReasoner.getInducedTheory(causalKnowledgeBase, observations, Map.of());
         var perAtomArgumentsWithAtomInConclusion = causalReasoner.getPerAtomArgumentsWithAtomInConclusion(theory, conclusionFilter);
 
@@ -82,7 +83,7 @@ public final class CausalReasonerService {
                 allSequenceExplanations.addAll(sequenceExplanations);
             }
         }
-        return new CausalReasonerService.SequenceExplanations(theory.getAttacks(), perAtomPerSequenceExplanations);
+        return new SequenceExplanations(theory.getAttacks(), perAtomPerSequenceExplanations);
     }
 
     public static final class SequenceExplanations {
@@ -102,5 +103,9 @@ public final class CausalReasonerService {
         public Map<Proposition, List<DialectialSequenceExplanation>> getPerAtomSequenceExplanations() {
             return perAtomSequenceExplanations;
         }
+    }
+
+    public DungTheory queryArgumentationFramework(CausalKnowledgeBase causalKnowledgeBase, Collection<PlFormula> observations) {
+        return causalReasoner.getInducedTheory(causalKnowledgeBase, observations, Map.of());
     }
 }

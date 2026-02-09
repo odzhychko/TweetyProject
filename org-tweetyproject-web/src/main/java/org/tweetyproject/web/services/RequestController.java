@@ -772,7 +772,8 @@ public class RequestController {
         return switch (causalReasonerPost.getCmd()) {
             case GET_CONCLUSIONS -> processConclusionsCommand(causalReasonerPost);
             case GET_SIGNIFICANT_ATOMS -> processSignificantAtomsCommand(causalReasonerPost);
-            case GET_SEQUENCE_EXPLANATIONS -> processSequenceExplanations(causalReasonerPost);
+			case GET_ARGUMENTATION_FRAMEWORK -> processArgumentationFramework(causalReasonerPost);
+			case GET_SEQUENCE_EXPLANATIONS -> processSequenceExplanations(causalReasonerPost);
         };
 	}
 
@@ -822,6 +823,19 @@ public class RequestController {
             throw new RuntimeException(e);
         }
     }
+
+	private String processArgumentationFramework(CausalReasonerPost causalReasonerPost) {
+		CausalKnowledgeBase causalKnowledgeBase = parseCausalKnowledgeBase(causalReasonerPost);
+		Collection<PlFormula> observations = parseObservations(causalReasonerPost);
+
+		var result = causalReasonerService.queryArgumentationFramework(causalKnowledgeBase, observations);
+		var reply = ArgumentationFrameworkReply.from(result);
+		try {
+			return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(reply);
+		} catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
     private static Collection<PlFormula> parseObservations(CausalReasonerPost causalReasonerPost) {
         CausalParser causalParser = new CausalParser();
