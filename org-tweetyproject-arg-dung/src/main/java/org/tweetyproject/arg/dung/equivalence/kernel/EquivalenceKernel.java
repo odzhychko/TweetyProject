@@ -98,4 +98,33 @@ public abstract class EquivalenceKernel {
             default -> throw new IllegalArgumentException("No kernel exists for semantics: " + semantics);
         }
     }
+
+        
+    /**
+     * Returns the strong expansion equivalence kernel for the given semantics.
+     *
+     * @param semantics the semantics
+     * @return the corresponding equivalence kernel
+     * @throws IllegalArgumentException if no kernel is defined for the given semantics
+     */
+    public static EquivalenceKernel getStrongExpansionEquivalenceKernelForSemantics(Semantics semantics) {
+        switch (semantics) {
+            case SST,EA -> {
+                return ADMISSIBLE;
+            }
+            case ST -> {
+                return STABLE;
+            }
+            case ADM,PR,ID,UC -> {
+                return SE_ADMISSIBLE;
+            }
+            case GR,SAD -> {
+                return SE_GROUNDED;
+            }
+            case CO -> {
+                return SE_COMPLETE;
+            }
+            default -> throw new IllegalArgumentException("No kernel defined for semantics: " + semantics);
+        }
+    }
 }
