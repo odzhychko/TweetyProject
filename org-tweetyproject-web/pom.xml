@@ -126,19 +126,24 @@
 		    <artifactId>json</artifactId>
 		    <version>20231013</version>
 		</dependency>
+        <dependency>
+            <groupId>org.tweetyproject.arg</groupId>
+            <artifactId>bipolar</artifactId>
+            <version>1.30-SNAPSHOT</version>
+        </dependency>
 
-		<!-- SLF4J API
-		<dependency>
-    		<groupId>org.slf4j</groupId>
-    		<artifactId>slf4j-api</artifactId>
-    		<version>1.7.32</version>
-		</dependency>
+        <!-- SLF4J API
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.32</version>
+        </dependency>
 
-		<dependency>
+        <dependency>
     <groupId>ch.qos.logback</groupId>
-    	<artifactId>logback-core</artifactId>
-    	<version>1.5.13</version>
-	</dependency> -->
+        <artifactId>logback-core</artifactId>
+        <version>1.5.13</version>
+    </dependency> -->
 
 <!-- Logback (Logging Implementation) -->
 		<!-- <dependency>

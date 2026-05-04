@@ -18,6 +18,7 @@
  */
 package org.tweetyproject.arg.bipolar.reasoner.necessity;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 import org.tweetyproject.commons.util.SetTools;
 
@@ -29,15 +30,15 @@ import java.util.*;
  * @author Lars Bengel
  *
  */
-public class AdmissibleReasoner {
+public class AdmissibleReasoner extends AbstractBipolarExtensionReasoner {
 	/**
 	 *
 	 * Return models
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(NecessityArgumentationFramework bbase) {
-        Set<ArgumentSet> extensions = new HashSet<ArgumentSet>();
+    public Collection<Collection<BArgument>> getModels(NecessityArgumentationFramework bbase) {
+        Set<Collection<BArgument>> extensions = new HashSet<>();
         Set<Set<BArgument>> subsets = new SetTools<BArgument>().subsets(bbase);
 
         for (Set<BArgument> ext: subsets) {
@@ -70,4 +71,13 @@ public class AdmissibleReasoner {
 
     /** Default Constructor */
     public AdmissibleReasoner(){}
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof NecessityArgumentationFramework) {
+            return this.getModels((NecessityArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
+    }
 }

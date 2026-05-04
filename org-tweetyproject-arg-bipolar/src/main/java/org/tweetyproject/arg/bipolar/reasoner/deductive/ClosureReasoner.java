@@ -18,6 +18,7 @@
  */
 package org.tweetyproject.arg.bipolar.reasoner.deductive;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 import org.tweetyproject.commons.util.SetTools;
 
@@ -29,7 +30,7 @@ import java.util.*;
  * @author Lars Bengel
  *
  */
-public class ClosureReasoner {
+public class ClosureReasoner extends AbstractBipolarExtensionReasoner {
 
 	/**
 	 *
@@ -37,8 +38,8 @@ public class ClosureReasoner {
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(DeductiveArgumentationFramework bbase) {
-        Set<ArgumentSet> extensions = new HashSet<>();
+    public Collection<Collection<BArgument>> getModels(DeductiveArgumentationFramework bbase) {
+        Set<Collection<BArgument>> extensions = new HashSet<>();
         // Check all subsets
         for(Set<BArgument> ext: new SetTools<BArgument>().subsets(bbase))
             if(bbase.isClosed(new ArgumentSet(ext)))
@@ -48,7 +49,7 @@ public class ClosureReasoner {
 
     /**
      *  Returns a model
-     * @param bbase a belieg base
+     * @param bbase a belief base
      * @return a ArgumentSet
      */
     public ArgumentSet getModel(DeductiveArgumentationFramework bbase) {
@@ -58,4 +59,13 @@ public class ClosureReasoner {
 
     /** Default Constructor */
     public ClosureReasoner(){}
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof DeductiveArgumentationFramework) {
+            return this.getModels((DeductiveArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
+    }
 }

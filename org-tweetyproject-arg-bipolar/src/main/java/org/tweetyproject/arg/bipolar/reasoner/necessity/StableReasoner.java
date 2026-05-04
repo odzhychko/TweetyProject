@@ -18,6 +18,7 @@
  */
 package org.tweetyproject.arg.bipolar.reasoner.necessity;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 
 import java.util.Collection;
@@ -31,16 +32,16 @@ import java.util.Set;
  * @author Lars Bengel
  *
  */
-public class StableReasoner {
+public class StableReasoner extends AbstractBipolarExtensionReasoner {
 	/**
 	 * 
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(NecessityArgumentationFramework bbase) {
-        Collection<ArgumentSet> preferredExtensions = new PreferredReasoner().getModels(bbase);
-        Set<ArgumentSet> result = new HashSet<>();
-        for(ArgumentSet ext: preferredExtensions){
+    public Collection<Collection<BArgument>> getModels(NecessityArgumentationFramework bbase) {
+        Collection<Collection<BArgument>> preferredExtensions = new PreferredReasoner().getModels(bbase);
+        Set<Collection<BArgument>> result = new HashSet<>();
+        for(Collection<BArgument> ext: preferredExtensions){
             Set<BArgument> deactivatedArguments = bbase.getDeactivatedArguments(ext);
             Set<BArgument> arguments = new HashSet<>(bbase);
             arguments.removeAll(ext);
@@ -56,14 +57,23 @@ public class StableReasoner {
 	 * @return model
 	 */
     public ArgumentSet getModel(NecessityArgumentationFramework bbase) {
-        Collection<ArgumentSet> preferredExtensions = new PreferredReasoner().getModels(bbase);
-        for(ArgumentSet ext: preferredExtensions){
+        Collection<Collection<BArgument>> preferredExtensions = new PreferredReasoner().getModels(bbase);
+        for(Collection<BArgument> ext: preferredExtensions){
             Set<BArgument> deactivatedArguments = bbase.getDeactivatedArguments(ext);
             Set<BArgument> arguments = new HashSet<>(bbase);
             arguments.removeAll(ext);
             if (deactivatedArguments.equals(arguments))
-                return ext;
+                return new ArgumentSet(ext);
         }
         return null;
+    }
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof NecessityArgumentationFramework) {
+            return this.getModels((NecessityArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
     }
 }

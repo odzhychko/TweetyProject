@@ -18,6 +18,7 @@
  */
 package org.tweetyproject.arg.bipolar.reasoner.necessity;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 
 import java.util.Collection;
@@ -29,15 +30,15 @@ import java.util.HashSet;
  * @author Lars Bengel
  *
  */
-public class GroundedReasoner {
+public class GroundedReasoner extends AbstractBipolarExtensionReasoner {
 	/**
 	 *
 	 * Return models
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(NecessityArgumentationFramework bbase) {
-        Collection<ArgumentSet> extensions = new HashSet<>();
+    public Collection<Collection<BArgument>> getModels(NecessityArgumentationFramework bbase) {
+        Collection<Collection<BArgument>> extensions = new HashSet<>();
         extensions.add(this.getModel(bbase));
         return extensions;
     }
@@ -60,4 +61,13 @@ public class GroundedReasoner {
 
     /** Default Constructor */
     public GroundedReasoner(){}
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof NecessityArgumentationFramework) {
+            return this.getModels((NecessityArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
+    }
 }
