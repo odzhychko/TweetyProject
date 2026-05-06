@@ -69,7 +69,7 @@ public abstract class AbstractExtensionReasonerFactory {
 		/**
 		 * Weakly Admissible semantics
 		 */
-		WAD("wad", "Weakly Admissable"),
+		WAD("wad", "Weakly Admissible"),
 
 		/**
 		 * Weakly Complete semantics
@@ -94,7 +94,7 @@ public abstract class AbstractExtensionReasonerFactory {
 		/**
 		 * Strongly Admissible semantics
 		 */
-		SAD("sad", "Strongly Admissable"),
+		SAD("sad", "Strongly Admissible"),
 
 		/**
 		 * Stage semantics

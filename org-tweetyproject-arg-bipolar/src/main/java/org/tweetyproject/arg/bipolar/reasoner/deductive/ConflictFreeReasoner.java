@@ -20,6 +20,7 @@
 
 package org.tweetyproject.arg.bipolar.reasoner.deductive;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 import org.tweetyproject.arg.dung.reasoner.SimpleConflictFreeReasoner;
 import org.tweetyproject.arg.dung.semantics.Extension;
@@ -31,18 +32,18 @@ import java.util.*;
  * reasoner for conflict-freeness in bipolar argumentation frameworks with a deductive support interpretation
  * a set of arguments is conflict-free iff it is conflict-free in regards to the complex attacks in the framework
  */
-public class ConflictFreeReasoner {
+public class ConflictFreeReasoner extends AbstractBipolarExtensionReasoner {
 	/**
 	 *
 	 * Return models
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(DeductiveArgumentationFramework bbase) {
+    public Collection<Collection<BArgument>> getModels(DeductiveArgumentationFramework bbase) {
         // get a dung theory containing all direct and complex attacks in the given bipolar argumentation framework
         DungTheory theory = bbase.getCompleteAssociatedDungTheory();
 
-        Collection<ArgumentSet> result = new HashSet<>();
+        Collection<Collection<BArgument>> result = new HashSet<>();
         for (Extension<DungTheory> ext: new SimpleConflictFreeReasoner().getModels(theory)) {
             result.add(new ArgumentSet(ext));
         }
@@ -51,4 +52,13 @@ public class ConflictFreeReasoner {
 
     /** Default Constructor */
     public ConflictFreeReasoner(){}
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof DeductiveArgumentationFramework) {
+            return this.getModels((DeductiveArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
+    }
 }

@@ -18,6 +18,7 @@
  */
 package org.tweetyproject.arg.bipolar.reasoner.necessity;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 
 import java.util.Collection;
@@ -30,19 +31,19 @@ import java.util.Set;
  * @author Lars Bengel
  *
  */
-public class PreferredReasoner {
+public class PreferredReasoner extends AbstractBipolarExtensionReasoner {
 	/**
 	 * 
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(NecessityArgumentationFramework bbase) {
-        Collection<ArgumentSet> completeExtensions = new CompleteReasoner().getModels(bbase);
-        Set<ArgumentSet> result = new HashSet<ArgumentSet>();
+    public Collection<Collection<BArgument>> getModels(NecessityArgumentationFramework bbase) {
+        Collection<Collection<BArgument>> completeExtensions = new CompleteReasoner().getModels(bbase);
+        Set<Collection<BArgument>> result = new HashSet<>();
         boolean maximal;
-        for(ArgumentSet e1: completeExtensions){
+        for(Collection<BArgument> e1: completeExtensions){
             maximal = true;
-            for(ArgumentSet e2: completeExtensions)
+            for(Collection<BArgument> e2: completeExtensions)
                 if(e1 != e2 && e2.containsAll(e1)){
                     maximal = false;
                     break;
@@ -58,13 +59,13 @@ public class PreferredReasoner {
 	 * @param bbase argumentation framework
 	 * @return model
 	 */
-    public ArgumentSet getModel(NecessityArgumentationFramework bbase) {
+    public Collection<BArgument> getModel(NecessityArgumentationFramework bbase) {
         // just return the first found preferred extension
-        Collection<ArgumentSet> completeExtensions = new CompleteReasoner().getModels(bbase);
+        Collection<Collection<BArgument>> completeExtensions = new CompleteReasoner().getModels(bbase);
         boolean maximal;
-        for(ArgumentSet e1: completeExtensions){
+        for(Collection<BArgument> e1: completeExtensions){
             maximal = true;
-            for(ArgumentSet e2: completeExtensions)
+            for(Collection<BArgument> e2: completeExtensions)
                 if(e1 != e2 && e2.containsAll(e1)){
                     maximal = false;
                     break;
@@ -74,5 +75,14 @@ public class PreferredReasoner {
         }
         // this should not happen
         throw new RuntimeException("Hmm, did not find a maximal set in a finite number of sets. Should not happen.");
+    }
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof NecessityArgumentationFramework) {
+            return this.getModels((NecessityArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
     }
 }

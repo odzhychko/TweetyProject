@@ -18,6 +18,7 @@
  */
 package org.tweetyproject.arg.bipolar.reasoner.deductive;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 import org.tweetyproject.arg.dung.reasoner.SimpleConflictFreeReasoner;
 import org.tweetyproject.arg.dung.semantics.Extension;
@@ -33,15 +34,15 @@ import java.util.*;
  * @author Lars Bengel
  *
  */
-public class SafetyReasoner  {
+public class SafetyReasoner extends AbstractBipolarExtensionReasoner {
 
 	/**
 	 * 
 	 * @param bbase arg framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(DeductiveArgumentationFramework bbase) {
-        Set<ArgumentSet> extensions = new HashSet<>();
+    public Collection<Collection<BArgument>> getModels(DeductiveArgumentationFramework bbase) {
+        Set<Collection<BArgument>> extensions = new HashSet<>();
         // Check only conflict-free subsets
         SimpleConflictFreeReasoner cfReasoner = new SimpleConflictFreeReasoner();
         for(Extension<DungTheory> ext: cfReasoner.getModels(bbase.getCompleteAssociatedDungTheory())){
@@ -72,5 +73,14 @@ public class SafetyReasoner  {
     public ArgumentSet getModel(DeductiveArgumentationFramework bbase) {
         // as the empty set is always safe we return that one.
         return new ArgumentSet();
+    }
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof DeductiveArgumentationFramework) {
+            return this.getModels((DeductiveArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
     }
 }

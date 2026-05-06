@@ -421,5 +421,4 @@ public class NecessityArgumentationFramework extends AbstractBipolarFramework im
         result = 37 * result + (this.supportParents == null ? 0 : this.supportParents.hashCode());
         return result;
     }
-
 }

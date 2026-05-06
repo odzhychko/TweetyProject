@@ -19,6 +19,7 @@
 
 package org.tweetyproject.arg.bipolar.reasoner.deductive;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 
 import java.util.*;
@@ -27,16 +28,16 @@ import java.util.*;
  * reasoner for admissibility in bipolar argumentation frameworks with deductive support interpretation
  * a set of arguments is d-admissible iff it is admissible wrt. the complex attacks in the framework
  */
-public class DAdmissibleReasoner {
+public class DAdmissibleReasoner extends AbstractBipolarExtensionReasoner {
 	/**
 	 *
 	 * Return models
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(DeductiveArgumentationFramework bbase) {
-        Collection<ArgumentSet> extensions = new HashSet<>();
-        for (ArgumentSet ext: new ConflictFreeReasoner().getModels(bbase)) {
+    public Collection<Collection<BArgument>> getModels(DeductiveArgumentationFramework bbase) {
+        Collection<Collection<BArgument>> extensions = new HashSet<>();
+        for (Collection<BArgument> ext: new ConflictFreeReasoner().getModels(bbase)) {
             for (BArgument arg: ext) {
                 boolean defending = true;
                 for (BipolarEntity attacker: bbase.getAttackers(arg)) {
@@ -55,4 +56,13 @@ public class DAdmissibleReasoner {
 
     /** Default Constructor */
     public DAdmissibleReasoner(){}
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        if (baf instanceof DeductiveArgumentationFramework) {
+            return this.getModels((DeductiveArgumentationFramework) baf);
+        } else {
+            throw new IllegalArgumentException("Unsupported Framework type");
+        }
+    }
 }

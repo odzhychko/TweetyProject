@@ -19,6 +19,7 @@
 
 package org.tweetyproject.arg.bipolar.reasoner.deductive;
 
+import org.tweetyproject.arg.bipolar.reasoner.AbstractBipolarExtensionReasoner;
 import org.tweetyproject.arg.bipolar.syntax.*;
 
 import java.util.*;
@@ -28,17 +29,17 @@ import java.util.*;
  * a set of arguments is c-admissible iff it is admissible wrt. the complex attacks in the framework and closed wrt.
  * the support relation
  */
-public class CAdmissibleReasoner {
+public class CAdmissibleReasoner extends AbstractBipolarExtensionReasoner {
 	/**
 	 *
 	 * Return models
 	 * @param bbase argumentation framework
 	 * @return models
 	 */
-    public Collection<ArgumentSet> getModels(DeductiveArgumentationFramework bbase) {
-        Collection<ArgumentSet> extensions = new HashSet<>();
-        for (ArgumentSet ext: new DAdmissibleReasoner().getModels(bbase)) {
-            if (bbase.isClosed(ext)) {
+    public Collection<Collection<BArgument>> getModels(DeductiveArgumentationFramework bbase) {
+        Collection<Collection<BArgument>> extensions = new HashSet<>();
+        for (Collection<BArgument> ext: new DAdmissibleReasoner().getModels(bbase)) {
+            if (bbase.isClosed(new ArgumentSet(ext))) {
                 extensions.add(ext);
             }
         }
@@ -47,4 +48,9 @@ public class CAdmissibleReasoner {
 
     /** Default Constructor */
     public CAdmissibleReasoner(){}
+
+    @Override
+    public Collection<Collection<BArgument>> getModels(AbstractBipolarFramework baf) {
+        return this.getModels((DeductiveArgumentationFramework) baf);
+    }
 }
