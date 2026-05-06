@@ -19,6 +19,7 @@
 package org.tweetyproject.web.services.sequenceexplanation;
 
 import org.tweetyproject.arg.explanations.semantics.DialectialSequenceExplanation;
+import org.tweetyproject.web.util.ArgumentSerialization;
 
 import java.util.List;
 import java.util.stream.Collectors;

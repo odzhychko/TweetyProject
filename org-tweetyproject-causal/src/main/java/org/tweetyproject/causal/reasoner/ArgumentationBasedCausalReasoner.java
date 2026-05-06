@@ -213,7 +213,7 @@ public class ArgumentationBasedCausalReasoner extends AbstractArgumentationBased
      *                      If {@code null}, the filter is not applied.
      * @return a map from atom to the set of matching arguments
      */
-    private Map<Proposition, Collection<CausalArgument>> getPerAtomArgumentsWithAtomInConclusion(DungTheory theory, Collection<Proposition> atomFilter) {
+    public Map<Proposition, Collection<CausalArgument>> getPerAtomArgumentsWithAtomInConclusion(DungTheory theory, Collection<Proposition> atomFilter) {
         var perAtomArguments = new HashMap<Proposition, Collection<CausalArgument>>();
 
         for (var argument: theory) {

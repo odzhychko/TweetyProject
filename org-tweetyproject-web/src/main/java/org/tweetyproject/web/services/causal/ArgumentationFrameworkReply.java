@@ -16,32 +16,41 @@
  *
  * Copyright 2025 The TweetyProject Team <http://tweetyproject.org/contact/>
  */
-package org.tweetyproject.web.services.sequenceexplanation;
+package org.tweetyproject.web.services.causal;
 
 import org.tweetyproject.arg.dung.syntax.Argument;
+import org.tweetyproject.arg.dung.syntax.DungTheory;
+import org.tweetyproject.web.services.sequenceexplanation.AttackDTO;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 /**
  * @author Oleksandr Dzhychko
  */
-public final class ArgumentSerialization {
-    public static String from(Argument argument) {
-        return argument.toString();
+public final class ArgumentationFrameworkReply {
+    private final List<String> arguments;
+    private final List<AttackDTO> attacks;
+
+    public ArgumentationFrameworkReply(List<String> arguments, List<AttackDTO> attacks) {
+        this.arguments = arguments;
+        this.attacks = attacks;
     }
 
-    public static List<String> fromCollection(Collection<Argument> arguments) {
-        return arguments.stream()
-                .map(ArgumentSerialization::from)
-                .collect(Collectors.toUnmodifiableList());
+    public List<String> getArguments() {
+        return arguments;
     }
 
-    public static List<List<String>> fromCollectionOfCollections(List<Collection<Argument>> collectionsOfArguments) {
-        return collectionsOfArguments.stream()
-                .map(ArgumentSerialization::fromCollection)
+    public List<AttackDTO> getAttacks() {
+        return attacks;
+    }
+
+    public static ArgumentationFrameworkReply from(DungTheory argumentationFramework) {
+        var arguments = argumentationFramework.stream()
+                .map(Argument::getName)
                 .collect(Collectors.toUnmodifiableList());
+        var attacksConverted = AttackDTO.from(argumentationFramework.getAttacks());
+        return new ArgumentationFrameworkReply(arguments, attacksConverted);
     }
 }
+
