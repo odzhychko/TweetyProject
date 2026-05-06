@@ -43,11 +43,11 @@ public class NecessityArgumentationTest {
     // Example from Polberg, Oren. Revisiting Support in Abstract Argumentation Systems. 2014
     static NecessityArgumentationFramework polberg_example4;
 
-    static Collection<ArgumentSet> stableExtensions = new HashSet<>();
-    static Collection<ArgumentSet> groundedExtensions = new HashSet<>();
-    static Collection<ArgumentSet> preferredExtensions = new HashSet<>();
-    static Collection<ArgumentSet> completeExtensions = new HashSet<>();
-    static Collection<ArgumentSet> admissibleExtensions = new HashSet<>();
+    static Collection<Collection<BArgument>> stableExtensions = new HashSet<>();
+    static Collection<Collection<BArgument>> groundedExtensions = new HashSet<>();
+    static Collection<Collection<BArgument>> preferredExtensions = new HashSet<>();
+    static Collection<Collection<BArgument>> completeExtensions = new HashSet<>();
+    static Collection<Collection<BArgument>> admissibleExtensions = new HashSet<>();
 
     @BeforeClass
     public static void setUpBeforeClass() {
@@ -93,31 +93,31 @@ public class NecessityArgumentationTest {
 
     @Test
     public void StableReasoning() {
-        Collection<ArgumentSet> extensions = new StableReasoner().getModels(polberg_example4);
+        Collection<Collection<BArgument>> extensions = new StableReasoner().getModels(polberg_example4);
         assertEquals(stableExtensions, extensions);
     }
 
     @Test
     public void CompleteReasoning() {
-        Collection<ArgumentSet> extensions = new CompleteReasoner().getModels(polberg_example4);
+        Collection<Collection<BArgument>> extensions = new CompleteReasoner().getModels(polberg_example4);
         assertEquals(completeExtensions, extensions);
     }
 
     @Test
     public void AdmissibleReasoning() {
-        Collection<ArgumentSet> extensions = new AdmissibleReasoner().getModels(polberg_example4);
+        Collection<Collection<BArgument>> extensions = new AdmissibleReasoner().getModels(polberg_example4);
         assertEquals(admissibleExtensions, extensions);
     }
 
     @Test
     public void GroundedReasoning() {
-        Collection<ArgumentSet> extensions = new GroundedReasoner().getModels(polberg_example4);
+        Collection<Collection<BArgument>> extensions = new GroundedReasoner().getModels(polberg_example4);
         assertEquals(groundedExtensions, extensions);
     }
 
     @Test
     public void PreferredReasoning() {
-        Collection<ArgumentSet> extensions = new PreferredReasoner().getModels(polberg_example4);
+        Collection<Collection<BArgument>> extensions = new PreferredReasoner().getModels(polberg_example4);
         assertEquals(preferredExtensions, extensions);
     }
 }
