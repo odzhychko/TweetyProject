@@ -25,7 +25,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -33,8 +35,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.json.JSONException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.tweetyproject.arg.dung.syntax.Argument;
+import org.tweetyproject.arg.dung.syntax.Attack;
 import org.tweetyproject.arg.dung.syntax.DungTheory;
 import org.tweetyproject.commons.BeliefSet;
 import org.tweetyproject.commons.Formula;
@@ -79,6 +84,11 @@ import org.tweetyproject.web.services.dung.DungReasonerCalleeFactory.Command;
 import org.tweetyproject.web.services.incmes.InconsistencyGetMeasuresResponse;
 import org.tweetyproject.web.services.incmes.InconsistencyPost;
 import org.tweetyproject.web.services.incmes.InconsistencyValueResponse;
+import org.tweetyproject.web.services.sequenceexplanation.*;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationPost.GetSequenceExplanationsCmd;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationPost.SequenceExplanationCmd;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationResponse.GetSequenceExplanationsResult;
+import org.tweetyproject.web.services.sequenceexplanation.SequenceExplanationResponse.SequenceExplanationResult;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.tweetyproject.arg.aba.parser.AbaParser;
@@ -97,6 +107,8 @@ import org.tweetyproject.arg.dung.reasoner.AbstractExtensionReasoner;
 import org.tweetyproject.arg.dung.semantics.Extension;
 
 import javafx.util.Pair;
+
+import javax.validation.Valid;
 import java.util.logging.Level;
 
 
@@ -109,7 +121,14 @@ public class RequestController {
 	private final int SERVICES_TIMEOUT_DUNG = 600;
 	private final int SERVICES_TIMEOUT_DELP = 600;
 	private final int SERVICES_TIMEOUT_INCMES = 300;
+	private final int SERVICES_TIMEOUT_SEQUENCE_EXPLANATION = 300;
 
+	private final SequenceExplanationService sequenceExplanationService;
+
+	@Autowired
+	public RequestController(SequenceExplanationService sequenceExplanationService) {
+		this.sequenceExplanationService = sequenceExplanationService;
+	}
 
 
 /**
@@ -696,5 +715,79 @@ public class RequestController {
 		return response;
 	}
 
+	@PostMapping(value = "/sequence-explanation", produces = "application/json")
+	@ResponseBody
+	public SequenceExplanationResponse handleRequest(@Valid @RequestBody SequenceExplanationPost request) {
+		LoggerUtil.logger.info(String.format("Run sequence explanation command \"%s\" for user \"%s\" with timeout: %s %s",
+				request.getCmd().getClass().getSimpleName(),
+				request.getEmail(),
+				request.getTimeout(),
+				request.getUnit_timeout()));
 
+		TimeUnit timeoutUnit = Utils.getTimoutUnit(request.getUnit_timeout());
+		int timeout = Utils.checkUserTimeout(request.getTimeout(), SERVICES_TIMEOUT_SEQUENCE_EXPLANATION, timeoutUnit);
+
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		Pair<SequenceExplanationResult, Long> resultAndExecutionTime;
+		try {
+			var future = executor.submit(() -> processCommand(request.getCmd()));
+			resultAndExecutionTime = Utils.runServicesWithTimeout(future, timeout, timeoutUnit);
+		} catch (TimeoutException e) {
+			LoggerUtil.logger.info("Timeout while running sequence explanation.");
+			return new SequenceExplanationResponse(
+					null,
+					request.getEmail(),
+					timeout,
+					request.getUnit_timeout(),
+					SequenceExplanationResponse.Status.TIMEOUT
+			);
+		} catch (ExecutionException e) {
+			LoggerUtil.logger.warning(() -> "Error while running sequence explanation reasoner: " + e.getMessage());
+			e.printStackTrace();
+			throw new RuntimeException(e);
+		} catch (InterruptedException e) {
+			LoggerUtil.logger.warning(() -> "Interrupt while running  sequence explanation: " + e.getMessage());
+			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			throw new RuntimeException("Thread was interrupted.");
+		} finally {
+			executor.shutdownNow();
+		}
+
+		long executionTime = resultAndExecutionTime.getValue();
+		var result = resultAndExecutionTime.getKey();
+		return new SequenceExplanationResponse(
+				result,
+				request.getEmail(),
+				executionTime,
+				request.getUnit_timeout(),
+				SequenceExplanationResponse.Status.SUCCESS
+		);
+	}
+
+	private SequenceExplanationResult processCommand(SequenceExplanationCmd cmd) {
+		if (cmd instanceof GetSequenceExplanationsCmd) {
+			return processSequenceExplanationCmd((GetSequenceExplanationsCmd) cmd);
+		} else {
+			throw new IllegalStateException("Encountered invalid command:" + cmd.getClass().getSimpleName());
+		}
+	}
+
+	private GetSequenceExplanationsResult processSequenceExplanationCmd(GetSequenceExplanationsCmd cmd) {
+		var theory = new DungTheory();
+		for (AttackDTO attackDTO: cmd.getAttacks()) {
+			var attacker = new Argument(attackDTO.getAttacker());
+			var attacked = new Argument(attackDTO.getAttacked());
+			theory.add(attacker);
+			theory.add(attacked);
+			var attack = new Attack(attacker, attacked);
+			theory.add(attack);
+		}
+		Set<Argument> argumentFilter = ArgumentFilterSerialization.deserialize(cmd.getArgumentFilter());
+		if (argumentFilter != null) {
+			theory.addAll(argumentFilter);
+		}
+		var sequenceExplanation = sequenceExplanationService.querySequenceExplanations(theory, argumentFilter);
+		return GetSequenceExplanationsResult.from(sequenceExplanation);
+	}
 }
